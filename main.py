@@ -6,6 +6,7 @@ mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(max_num_hands=1, min_detection_confidence=0.7, min_tracking_confidence=0.5)
 mp_draw = mp.solutions.drawing_utils
 
+# Landmark indices from MediaPipe documentation
 WRIST = 0
 THUMB_CMC = 1
 THUMB_MCP = 2
@@ -46,19 +47,16 @@ def calculate_angle(p1, p2, p3):
     if mag_v1 * mag_v2 == 0:
         return 180.0 # Return a neutral angle if magnitude is zero to avoid errors
     
-    # Clamp argument to acos to [-1, 1] for numerical stability
     acos_arg = max(-1.0, min(1.0, dot_product / (mag_v1 * mag_v2)))
     angle_rad = math.acos(acos_arg)
     angle_deg = math.degrees(angle_rad)
     return angle_deg
 
 def is_thumbs_up(landmarks, debug=False):
-    # 1. Thumb Extension Check
     angle_thumb_mcp = calculate_angle(landmarks[THUMB_CMC], landmarks[THUMB_MCP], landmarks[THUMB_IP])
     angle_thumb_ip = calculate_angle(landmarks[THUMB_MCP], landmarks[THUMB_IP], landmarks[THUMB_TIP])
     thumb_extended = angle_thumb_mcp > 130 and angle_thumb_ip > 130
 
-    # 2. Thumb Orientation Check
     thumb_tip_y = landmarks[THUMB_TIP].y
     thumb_ip_y = landmarks[THUMB_IP].y
     thumb_mcp_y = landmarks[THUMB_MCP].y
@@ -66,7 +64,7 @@ def is_thumbs_up(landmarks, debug=False):
     
     thumb_is_up = (thumb_tip_y < thumb_ip_y and 
                    thumb_tip_y < thumb_mcp_y and 
-                   thumb_tip_y < wrist_y * 0.95) # Thumb tip well above wrist
+                   thumb_tip_y < wrist_y * 0.95)
 
     other_fingers_mcp_avg_y = (
         landmarks[INDEX_FINGER_MCP].y +
@@ -75,7 +73,6 @@ def is_thumbs_up(landmarks, debug=False):
         landmarks[PINKY_MCP].y) / 4.0
     thumb_is_up = thumb_is_up and (thumb_tip_y < other_fingers_mcp_avg_y)
 
-    # 3. Other Fingers Flexion Check (Majority rule: at least 3 out of 4 fingers flexed)
     flexed_finger_count = 0
     finger_names = ["Index", "Middle", "Ring", "Pinky"]
     finger_mcp_joints = [INDEX_FINGER_MCP, MIDDLE_FINGER_MCP, RING_FINGER_MCP, PINKY_MCP]
@@ -104,14 +101,14 @@ def is_thumbs_up(landmarks, debug=False):
         if finger_is_flexed_this_iteration:
             flexed_finger_count += 1
         elif debug:
-            print(f"ThumbsUp - {finger_names[i]} not counted as flexed: angle_pip={angle_pip:.1f} (Thresh: <{pip_flex_threshold}), angle_dip={angle_dip:.1f}, tip.y={tip.y:.2f}, mcp.y*0.90={(mcp.y * 0.90):.2f}")
+            print(f"ThumbsUp V10 - {finger_names[i]} not counted as flexed: angle_pip={angle_pip:.1f} (Thresh: <{pip_flex_threshold}), angle_dip={angle_dip:.1f}, tip.y={tip.y:.2f}, mcp.y*0.90={(mcp.y * 0.90):.2f}")
 
     fingers_flexed_majority = flexed_finger_count >= 3
 
     if debug:
-        print(f"ThumbsUp - Thumb Extended: {thumb_extended} (MCP Angle: {angle_thumb_mcp:.1f}, IP Angle: {angle_thumb_ip:.1f})")
-        print(f"ThumbsUp - Thumb Is Up: {thumb_is_up} (TipY: {thumb_tip_y:.2f}, WristY: {wrist_y:.2f}, OtherMCP_AvgY: {other_fingers_mcp_avg_y:.2f})")
-        print(f"ThumbsUp - Flexed Finger Count: {flexed_finger_count} (Required >= 3 for majority)")
+        print(f"ThumbsUp V10 - Thumb Extended: {thumb_extended} (MCP Angle: {angle_thumb_mcp:.1f}, IP Angle: {angle_thumb_ip:.1f})")
+        print(f"ThumbsUp V10 - Thumb Is Up: {thumb_is_up} (TipY: {thumb_tip_y:.2f}, WristY: {wrist_y:.2f}, OtherMCP_AvgY: {other_fingers_mcp_avg_y:.2f})")
+        print(f"ThumbsUp V10 - Flexed Finger Count: {flexed_finger_count} (Required >= 3 for majority)")
             
     return thumb_extended and thumb_is_up and fingers_flexed_majority
 
@@ -126,36 +123,106 @@ def is_peace_sign(landmarks, debug=False):
     angle_middle_dip = calculate_angle(landmarks[MIDDLE_FINGER_PIP], landmarks[MIDDLE_FINGER_DIP], landmarks[MIDDLE_FINGER_TIP])
     middle_extended = angle_middle_pip > 150 and angle_middle_dip > 150
 
-    # 3. Ring Finger Flexion
+    # 3. Ring Finger Flexion - Must be flexed
     angle_ring_pip = calculate_angle(landmarks[RING_FINGER_MCP], landmarks[RING_FINGER_PIP], landmarks[RING_FINGER_DIP])
-    # angle_ring_dip = calculate_angle(landmarks[RING_FINGER_PIP], landmarks[RING_FINGER_DIP], landmarks[RING_FINGER_TIP])
-    ring_flexed = angle_ring_pip < 110 and landmarks[RING_FINGER_TIP].y > landmarks[RING_FINGER_PIP].y
+    ring_flexed = False
+    if angle_ring_pip < 90: # Strongly flexed
+        ring_flexed = True
+    elif angle_ring_pip < 130: # Moderately flexed, check y-pos loosely
+        ring_flexed = landmarks[RING_FINGER_TIP].y > landmarks[RING_FINGER_MCP].y * 0.98
 
-    # 4. Pinky Finger Flexion
+    # 4. Pinky Finger Flexion - Must be flexed for Peace Sign (to differentiate from RockNRoll)
     angle_pinky_pip = calculate_angle(landmarks[PINKY_MCP], landmarks[PINKY_PIP], landmarks[PINKY_DIP])
-    # angle_pinky_dip = calculate_angle(landmarks[PINKY_PIP], landmarks[PINKY_DIP], landmarks[PINKY_TIP])
-    pinky_flexed = angle_pinky_pip < 110 and landmarks[PINKY_TIP].y > landmarks[PINKY_PIP].y
+    pinky_flexed = False
+    if angle_pinky_pip < 90: # Strongly flexed
+        pinky_flexed = True
+    elif angle_pinky_pip < 130: # Moderately flexed, check y-pos loosely
+        pinky_flexed = landmarks[PINKY_TIP].y > landmarks[PINKY_MCP].y * 0.98
 
-    # 5. Thumb Flexion/Neutral Position (not extended up)
+    # 5. Thumb Logic: Must be neutral/flexed AND not an aggressive thumbs-up pose
     angle_thumb_mcp = calculate_angle(landmarks[THUMB_CMC], landmarks[THUMB_MCP], landmarks[THUMB_IP])
     angle_thumb_ip = calculate_angle(landmarks[THUMB_MCP], landmarks[THUMB_IP], landmarks[THUMB_TIP])
-    # Thumb tip should be below thumb MCP or close to index MCP
-    thumb_flexed_neutral = (angle_thumb_mcp < 150 and angle_thumb_ip < 150) or  (landmarks[THUMB_TIP].y > landmarks[THUMB_MCP].y * 0.95) or (calculate_distance(landmarks[THUMB_TIP], landmarks[INDEX_FINGER_MCP]) < calculate_distance(landmarks[THUMB_TIP], landmarks[THUMB_CMC])*0.8)
+
+    thumb_flexed_neutral = (angle_thumb_mcp < 150) or \
+                           (landmarks[THUMB_TIP].y > landmarks[THUMB_MCP].y * 0.95) or \
+                           (calculate_distance(landmarks[THUMB_TIP], landmarks[INDEX_FINGER_MCP]) < calculate_distance(landmarks[THUMB_TIP], landmarks[THUMB_CMC])*0.8)
+
+    is_thumb_angles_extended_for_aggressive_thumbs_up = angle_thumb_mcp > 140 and angle_thumb_ip > 140
+    is_thumb_tip_high_vs_own_joints = landmarks[THUMB_TIP].y < landmarks[THUMB_IP].y * 0.95 and \
+                                      landmarks[THUMB_TIP].y < landmarks[THUMB_MCP].y * 0.95
+    is_thumb_tip_high_vs_wrist = landmarks[THUMB_TIP].y < landmarks[WRIST].y * 0.90
+    avg_index_middle_mcp_y = (landmarks[INDEX_FINGER_MCP].y + landmarks[MIDDLE_FINGER_MCP].y) / 2.0
+    is_thumb_tip_high_vs_relevant_mcps = landmarks[THUMB_TIP].y < avg_index_middle_mcp_y * 0.95
+
+    is_aggressive_thumbs_up_thumb = is_thumb_angles_extended_for_aggressive_thumbs_up and \
+                                   is_thumb_tip_high_vs_own_joints and \
+                                   is_thumb_tip_high_vs_wrist and \
+                                   is_thumb_tip_high_vs_relevant_mcps
     
-    # Ensure thumb is not pointing up like in thumbs up
-    thumb_not_up = not (landmarks[THUMB_TIP].y < landmarks[WRIST].y * 0.95 and 
-                        landmarks[THUMB_TIP].y < landmarks[INDEX_FINGER_MCP].y and 
-                        landmarks[THUMB_TIP].y < landmarks[MIDDLE_FINGER_MCP].y)
+    thumb_condition_met = thumb_flexed_neutral and (not is_aggressive_thumbs_up_thumb)
 
     if debug:
-        print(f"PeaceSign - Index Extended: {index_extended} (PIP: {angle_index_pip:.1f}, DIP: {angle_index_dip:.1f})")
-        print(f"PeaceSign - Middle Extended: {middle_extended} (PIP: {angle_middle_pip:.1f}, DIP: {angle_middle_dip:.1f})")
-        print(f"PeaceSign - Ring Flexed: {ring_flexed} (PIP: {angle_ring_pip:.1f})")
-        print(f"PeaceSign - Pinky Flexed: {pinky_flexed} (PIP: {angle_pinky_pip:.1f})")
-        print(f"PeaceSign - Thumb Flexed/Neutral: {thumb_flexed_neutral} (MCP: {angle_thumb_mcp:.1f}, IP: {angle_thumb_ip:.1f})")
-        print(f"PeaceSign - Thumb Not Up: {thumb_not_up}")
+        print(f"PeaceSign V10 - Index Extended: {index_extended} (PIP: {angle_index_pip:.1f}, DIP: {angle_index_dip:.1f})")
+        print(f"PeaceSign V10 - Middle Extended: {middle_extended} (PIP: {angle_middle_pip:.1f}, DIP: {angle_middle_dip:.1f})")
+        print(f"PeaceSign V10 - Ring Flexed: {ring_flexed} (PIP: {angle_ring_pip:.1f}, TipY: {landmarks[RING_FINGER_TIP].y:.2f}, MCPY: {landmarks[RING_FINGER_MCP].y:.2f})")
+        print(f"PeaceSign V10 - Pinky Flexed: {pinky_flexed} (PIP: {angle_pinky_pip:.1f}, TipY: {landmarks[PINKY_TIP].y:.2f}, MCPY: {landmarks[PINKY_MCP].y:.2f})")
+        print(f"PeaceSign V10 - Thumb Flexed/Neutral (5a): {thumb_flexed_neutral} (MCP: {angle_thumb_mcp:.1f}, IP: {angle_thumb_ip:.1f})")
+        print(f"PeaceSign V10 - Is Aggressive Thumbs Up Thumb (for 5b): {is_aggressive_thumbs_up_thumb}")
+        print(f"PeaceSign V10 - Final Thumb Condition Met (5a AND not 5b): {thumb_condition_met}")
 
-    return index_extended and middle_extended and ring_flexed and pinky_flexed and thumb_flexed_neutral and thumb_not_up
+    return index_extended and middle_extended and ring_flexed and pinky_flexed and thumb_condition_met
+
+def is_rock_n_roll_sign(landmarks, debug=False):
+    # 1. Index Finger Extension
+    angle_index_pip = calculate_angle(landmarks[INDEX_FINGER_MCP], landmarks[INDEX_FINGER_PIP], landmarks[INDEX_FINGER_DIP])
+    angle_index_dip = calculate_angle(landmarks[INDEX_FINGER_PIP], landmarks[INDEX_FINGER_DIP], landmarks[INDEX_FINGER_TIP])
+    index_extended = angle_index_pip > 150 and angle_index_dip > 150
+
+    # 2. Pinky Finger Extension
+    angle_pinky_pip = calculate_angle(landmarks[PINKY_MCP], landmarks[PINKY_PIP], landmarks[PINKY_DIP])
+    angle_pinky_dip = calculate_angle(landmarks[PINKY_PIP], landmarks[PINKY_DIP], landmarks[PINKY_TIP])
+    pinky_extended = angle_pinky_pip > 150 and angle_pinky_dip > 150
+
+    # 3. Middle Finger Flexion
+    angle_middle_pip = calculate_angle(landmarks[MIDDLE_FINGER_MCP], landmarks[MIDDLE_FINGER_PIP], landmarks[MIDDLE_FINGER_DIP])
+    middle_flexed = angle_middle_pip < 100 and landmarks[MIDDLE_FINGER_TIP].y > landmarks[MIDDLE_FINGER_MCP].y * 0.95
+
+    # 4. Ring Finger Flexion
+    angle_ring_pip = calculate_angle(landmarks[RING_FINGER_MCP], landmarks[RING_FINGER_PIP], landmarks[RING_FINGER_DIP])
+    ring_flexed = angle_ring_pip < 100 and landmarks[RING_FINGER_TIP].y > landmarks[RING_FINGER_MCP].y * 0.95
+
+    # 5. Thumb Logic: Must be neutral/flexed AND not an aggressive thumbs-up pose
+    angle_thumb_mcp = calculate_angle(landmarks[THUMB_CMC], landmarks[THUMB_MCP], landmarks[THUMB_IP])
+    angle_thumb_ip = calculate_angle(landmarks[THUMB_MCP], landmarks[THUMB_IP], landmarks[THUMB_TIP])
+
+    thumb_flexed_neutral = (angle_thumb_mcp < 150 and angle_thumb_ip < 175) or \
+                           (landmarks[THUMB_TIP].y > landmarks[THUMB_MCP].y * 0.95) or \
+                           (calculate_distance(landmarks[THUMB_TIP], landmarks[INDEX_FINGER_MCP]) < calculate_distance(landmarks[THUMB_TIP], landmarks[THUMB_CMC])*0.9)
+
+    is_thumb_angles_extended_for_aggressive_thumbs_up = angle_thumb_mcp > 140 and angle_thumb_ip > 140
+    is_thumb_tip_high_vs_own_joints = landmarks[THUMB_TIP].y < landmarks[THUMB_IP].y * 0.95 and \
+                                      landmarks[THUMB_TIP].y < landmarks[THUMB_MCP].y * 0.95
+    is_thumb_tip_high_vs_wrist = landmarks[THUMB_TIP].y < landmarks[WRIST].y * 0.90
+    avg_index_pinky_mcp_y = (landmarks[INDEX_FINGER_MCP].y + landmarks[PINKY_MCP].y) / 2.0
+    is_thumb_tip_high_vs_relevant_mcps = landmarks[THUMB_TIP].y < avg_index_pinky_mcp_y * 0.95
+
+    is_aggressive_thumbs_up_thumb = is_thumb_angles_extended_for_aggressive_thumbs_up and \
+                                   is_thumb_tip_high_vs_own_joints and \
+                                   is_thumb_tip_high_vs_wrist and \
+                                   is_thumb_tip_high_vs_relevant_mcps
+    
+    thumb_condition_met = thumb_flexed_neutral and (not is_aggressive_thumbs_up_thumb)
+
+    if debug:
+        print(f"RockNRoll V10-R1 - Index Extended: {index_extended} (PIP: {angle_index_pip:.1f}, DIP: {angle_index_dip:.1f})")
+        print(f"RockNRoll V10-R1 - Pinky Extended: {pinky_extended} (PIP: {angle_pinky_pip:.1f}, DIP: {angle_pinky_dip:.1f})")
+        print(f"RockNRoll V10-R1 - Middle Flexed: {middle_flexed} (PIP: {angle_middle_pip:.1f}, TipY: {landmarks[MIDDLE_FINGER_TIP].y:.2f}, MCPY: {landmarks[MIDDLE_FINGER_MCP].y:.2f})")
+        print(f"RockNRoll V10-R1 - Ring Flexed: {ring_flexed} (PIP: {angle_ring_pip:.1f}, TipY: {landmarks[RING_FINGER_TIP].y:.2f}, MCPY: {landmarks[RING_FINGER_MCP].y:.2f})")
+        print(f"RockNRoll V10-R1 - Thumb Flexed/Neutral (5a): {thumb_flexed_neutral} (MCP: {angle_thumb_mcp:.1f}, IP: {angle_thumb_ip:.1f})")
+        print(f"RockNRoll V10-R1 - Is Aggressive Thumbs Up Thumb (for 5b): {is_aggressive_thumbs_up_thumb}")
+        print(f"RockNRoll V10-R1 - Final Thumb Condition Met (5a AND not 5b): {thumb_condition_met}")
+
+    return index_extended and pinky_extended and middle_flexed and ring_flexed and thumb_condition_met
 
 cap = cv2.VideoCapture(0)
 
@@ -163,7 +230,7 @@ if not cap.isOpened():
     print("Error: Could not open video stream.")
     exit()
 
-print("Starting video stream (multi_gesture_detection_v1.py). Press ESC to exit.")
+print("Starting video stream (multi_gesture_detection_v10.py). Press ESC to exit.")
 print("Debug messages for gesture detection will be printed to the console.")
 
 while True:
@@ -186,16 +253,17 @@ while True:
             if is_thumbs_up(hand_landmarks.landmark, debug=True):
                 gesture_text = "Thumbs Up!"
                 text_color = (0, 255, 0) # Green
+            elif is_rock_n_roll_sign(hand_landmarks.landmark, debug=True):
+                gesture_text = "Rock N Roll!"
+                text_color = (255, 105, 180) # Hot Pink
             elif is_peace_sign(hand_landmarks.landmark, debug=True):
                 gesture_text = "Peace Sign!"
                 text_color = (0, 255, 255) # Yellow
-            # Add other gesture checks here with elif
             
-            break # Process only the first detected hand
     
     cv2.putText(frame, gesture_text, (50, 50), 
                 cv2.FONT_HERSHEY_SIMPLEX, 1.2, text_color, 3)
-    cv2.imshow("Multi-Gesture Detection v1", frame)
+    cv2.imshow("Multi-Gesture Detection v10", frame)
 
     if cv2.waitKey(1) & 0xFF == 27: # ESC key to exit
         break
