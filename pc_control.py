@@ -2,17 +2,14 @@ import cv2
 import numpy as np
 import mediapipe as mp
 import pyautogui
-import joblib  # or load TensorFlow/Keras model if needed
+import joblib
 import ctypes
 
+# Load trained model (adjust path as needed)
+model = joblib.load('lightgbm_model.joblib')
+class_names = ['like', 'no_gesture', 'peace', 'rock']  # Adjust to your class names
 
-
-# Load trained model
-model = joblib.load('lightgbm_model.joblib')  # Change to desired model
-class_names = ['like', 'no_gesture', 'peace', 'rock']  # Adjust to class order
-
-
-# Windows API constants
+# Windows API constants for mouse button simulation
 MOUSEEVENTF_XDOWN = 0x0080
 MOUSEEVENTF_XUP = 0x0100
 XBUTTON1 = 0x0001  # Back button
@@ -56,7 +53,6 @@ if not cap.isOpened():
     exit()
 
 last_prediction = None
-cooldown_frames = 10  # Prevent repeating the same command too fast
 frame_counter = 0
 
 print("Starting PC control. Press 'q' to exit.")
@@ -78,12 +74,14 @@ while True:
         cv2.putText(frame, f'Gesture: {predicted_class}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX,
                     1, (0, 255, 0), 2, cv2.LINE_AA)
 
-        # Trigger action if not in cooldown
-        if predicted_class in gesture_actions and (predicted_class != last_prediction or frame_counter > cooldown_frames):
-            print(f"Triggered: {predicted_class}")
-            gesture_actions[predicted_class]()
-            last_prediction = predicted_class
-            frame_counter = 0
+        # Trigger action with custom cooldown for 'like'
+        required_cooldown = 50 if predicted_class == 'like' else 10
+        if predicted_class in gesture_actions:
+            if predicted_class != last_prediction or frame_counter > required_cooldown:
+                print(f"Triggered: {predicted_class}")
+                gesture_actions[predicted_class]()
+                last_prediction = predicted_class
+                frame_counter = 0
     else:
         cv2.putText(frame, 'No Hand Detected', (10, 30), cv2.FONT_HERSHEY_SIMPLEX,
                     1, (0, 0, 255), 2, cv2.LINE_AA)

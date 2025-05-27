@@ -6,6 +6,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay, accuracy_score
 import joblib
+from sklearn.metrics import f1_score
 
 # Dataset directory
 DATASET_DIR = 'dataset_landmarks'
@@ -67,7 +68,9 @@ plt.title("Confusion Matrix with Counts")
 plt.show()
 
 print(f"Validation Accuracy: {accuracy:.4f}")
+f1 = f1_score(y_val, y_pred, average='weighted')
 
+print(f"Weighted F1 Score: {f1:.4f}")
 # Save model
 joblib.dump(mlp, 'mlp_model.joblib')
 print("MLP model saved as 'mlp_model.joblib'")

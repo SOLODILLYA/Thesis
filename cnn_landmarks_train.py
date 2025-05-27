@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 from tensorflow.keras.callbacks import ModelCheckpoint
-
+from sklearn.metrics import f1_score
 # Dataset directory containing subfolders per class with .txt files
 DATASET_DIR = 'dataset_landmarks'
 MAX_SAMPLES_PER_CLASS = 2000  # Limit per class
@@ -127,6 +127,8 @@ print(f"Validation accuracy of the saved best model: {val_accuracy:.4f}")
 # Detailed prediction report
 y_pred_probs = best_model.predict(val_ds)
 y_pred = np.argmax(y_pred_probs, axis=1)
+f1 = f1_score(y_val, y_pred, average='weighted')
 
+print(f"Weighted F1 Score: {f1:.4f}")
 print("\nDetailed Classification Report:")
 print(classification_report(y_val, y_pred, target_names=class_names))

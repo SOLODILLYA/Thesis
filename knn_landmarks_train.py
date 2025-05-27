@@ -6,7 +6,7 @@ from sklearn.metrics import classification_report, confusion_matrix, accuracy_sc
 import matplotlib.pyplot as plt
 import seaborn as sns
 import joblib
-
+from sklearn.metrics import f1_score
 # Directory with subfolders per gesture, containing landmark .txt files
 DATASET_DIR = './dataset_landmarks/'
 
@@ -77,7 +77,7 @@ plt.ylabel("True Label")
 plt.show()
 
 accuracy = accuracy_score(y_test, y_pred)
-print(f"Overall Accuracy: {accuracy:.2f}")
+print(f"Overall Accuracy: {accuracy:.4f}")
 
 print("\nPer-Class Accuracy:")
 for i, label in enumerate(knn.classes_):
@@ -85,7 +85,9 @@ for i, label in enumerate(knn.classes_):
     total_samples = cm[i].sum()
     class_accuracy = true_positives / total_samples if total_samples > 0 else 0
     print(f"{label}: {class_accuracy:.2f}")
+f1 = f1_score(y_test, y_pred, average='weighted')
 
+print(f"Weighted F1 Score: {f1:.4f}")
 # Save model
 joblib.dump(knn, 'knn_landmark_model.joblib')
 print("Model saved as knn_landmark_model.joblib")

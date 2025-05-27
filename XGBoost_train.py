@@ -6,6 +6,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay, accuracy_score
 import xgboost as xgb
 import joblib
+from sklearn.metrics import f1_score
 
 # Dataset directory
 DATASET_DIR = 'dataset_landmarks'
@@ -74,7 +75,9 @@ plt.title("Confusion Matrix with Counts")
 plt.show()
 
 print(f"Validation Accuracy: {accuracy:.4f}")
+f1 = f1_score(y_val, y_pred, average='weighted')
 
+print(f"Weighted F1 Score: {f1:.4f}")
 # Save model
 joblib.dump(xgb_model, 'xgboost_model.joblib')
 print("XGBoost model saved as 'xgboost_model.joblib'")
