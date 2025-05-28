@@ -4,9 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import HistGradientBoostingClassifier
-from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay, accuracy_score
+from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay, accuracy_score, f1_score
 import joblib
-from sklearn.metrics import f1_score
+
 # Dataset directory
 DATASET_DIR = 'dataset_landmarks'
 MAX_SAMPLES_PER_CLASS = 2000
@@ -25,7 +25,7 @@ def load_landmarks(txt_path):
             parts = line.strip().split(',')
             if len(parts) == 4:
                 values.extend([float(parts[1]), float(parts[2]), float(parts[3])])
-        return np.array(values)
+        return np.array(values, dtype=np.float32)  # convert to float32
 
 # Load dataset with random sampling
 for label_idx, label in enumerate(class_names):
@@ -39,7 +39,7 @@ for label_idx, label in enumerate(class_names):
             X.append(data)
             y.append(label_idx)
 
-X = np.array(X)
+X = np.array(X, dtype=np.float32)  # convert full array to float32
 y = np.array(y)
 
 # Stratified split
@@ -47,8 +47,14 @@ X_train, X_val, y_train, y_val = train_test_split(
     X, y, test_size=0.2, stratify=y, random_state=42
 )
 
-# Create and train HistGradientBoost model
-hist_model = HistGradientBoostingClassifier(max_iter=100, random_state=42)
+# Create and train HistGradientBoost model (limit CPU cores with n_jobs)
+hist_model = HistGradientBoostingClassifier(
+    max_iter=100,
+    random_state=42,
+    max_leaf_nodes=31,
+    min_samples_leaf=20
+    # Note: HistGradientBoostingClassifier does not have n_jobs, but other scikit-learn models do
+)
 hist_model.fit(X_train, y_train)
 
 # Evaluate
@@ -69,8 +75,8 @@ plt.show()
 print(f"Validation Accuracy: {accuracy:.4f}")
 
 f1 = f1_score(y_val, y_pred, average='weighted')
-
 print(f"Weighted F1 Score: {f1:.4f}")
+
 # Save model
 joblib.dump(hist_model, 'hist_gradient_boost_model.joblib')
 print("HistGradientBoost model saved as 'hist_gradient_boost_model.joblib'")

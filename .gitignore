@@ -6,3 +6,4 @@ cnn.py
 cnn_test.py
 cnn_train.py
 video_dataset/
+config_local.py

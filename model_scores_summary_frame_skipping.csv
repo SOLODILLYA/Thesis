@@ -1,0 +1,12 @@
+Model,Avg FPS,Avg CPU (%),Avg RAM (MB),Avg GPU (%),Score
+svm_model.joblib,56.64,2.22,573.01,0.16,3.573
+knn_landmark_model.joblib,55.96,2.14,574.93,0.18,3.8791
+bagging_model.joblib,54.96,1.81,564.61,0.22,4.0255
+mlp_model.joblib,56.22,1.81,571.37,0.24,4.4877
+catboost_model.cbm,56.44,1.72,582.75,0.26,4.6291
+random_forest_model.joblib,55.65,1.94,580.64,0.27,5.5227
+logistic_regression_model.joblib,56.42,2.57,571.39,0.22,5.7764
+best_cnn_model_landmarks.h5,47.54,2.66,616.95,0.29,10.01
+hist_gradient_boost_model.joblib,50.25,29.37,569.44,0.18,60.5147
+xgboost_model.joblib,60.09,49.86,578.79,0.26,122.7876
+lightgbm_model.joblib,59.29,30.29,571.24,0.57,165.8371
