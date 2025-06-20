@@ -1,19 +1,83 @@
-import joblib
+import os
+import random
 import numpy as np
-from sklearn.metrics import accuracy_score, f1_score, classification_report
+import lightgbm as lgb
+import joblib
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay, accuracy_score, f1_score
 
-# Load validation data
-X_val = np.load('../X_val.npy')
-y_val = np.load('../y_val.npy')
+# Dataset directory
+DATASET_DIR = '../dataset_landmarks'
+MAX_SAMPLES_PER_CLASS = 2000
 
-# Load Booster model
-bst = joblib.load('../lightgbm_model_full.joblib')
+X = []
+y = []
+class_names = sorted([d for d in os.listdir(DATASET_DIR) if os.path.isdir(os.path.join(DATASET_DIR, d))])
 
-# Get best iteration or fallback to full
+def load_landmarks(txt_path):
+    with open(txt_path, 'r') as f:
+        lines = f.readlines()
+        if not lines or "No hand landmarks" in lines[0]:
+            return None
+        values = []
+        for line in lines:
+            parts = line.strip().split(',')
+            if len(parts) == 4:
+                values.extend([float(parts[1]), float(parts[2]), float(parts[3])])
+        return np.array(values)
+
+# Load dataset
+for label_idx, label in enumerate(class_names):
+    label_path = os.path.join(DATASET_DIR, label)
+    all_files = [f for f in os.listdir(label_path) if f.endswith('.txt')]
+    sampled_files = random.sample(all_files, min(len(all_files), MAX_SAMPLES_PER_CLASS))
+
+    for file in sampled_files:
+        data = load_landmarks(os.path.join(label_path, file))
+        if data is not None:
+            X.append(data)
+            y.append(label_idx)
+
+X = np.array(X)
+y = np.array(y)
+
+# Save validation set for later pruning (if needed)
+np.save('X_val.npy', X)
+np.save('y_val.npy', y)
+
+# Split data
+X_train, X_val, y_train, y_val = train_test_split(
+    X, y, test_size=0.2, stratify=y, random_state=42
+)
+
+# Prepare LightGBM datasets
+train_data = lgb.Dataset(X_train, label=y_train)
+valid_data = lgb.Dataset(X_val, label=y_val)
+
+params = {
+    'objective': 'multiclass',
+    'num_class': len(class_names),
+    'learning_rate': 0.1,      
+    'max_depth': 2,           
+    'num_leaves': 3,        
+    'min_data_in_leaf': 20, 
+    'min_gain_to_split': 0.1,
+    'seed': 42      
+}
+
+# Train with pruning
+bst = lgb.train(
+    params,
+    train_data,
+    num_boost_round=100,
+    valid_sets=[valid_data]
+)
+# Get best iteration or fallback
 best_iter = getattr(bst, 'best_iteration', None)
-if best_iter is None or best_iter == 0:
+if best_iter is None:
     best_iter = bst.current_iteration()
-print(f"Pruning to {best_iter} boosting rounds...")
+print(f"Best iteration (or last iteration if none tracked): {best_iter}")
 
 # Predict and evaluate
 y_pred_prob = bst.predict(X_val, num_iteration=best_iter)
@@ -22,11 +86,26 @@ y_pred = np.argmax(y_pred_prob, axis=1)
 accuracy = accuracy_score(y_val, y_pred)
 f1 = f1_score(y_val, y_pred, average='weighted')
 
-print(f"Pruned Model Accuracy: {accuracy:.4f}")
-print(f"Pruned Weighted F1 Score: {f1:.4f}")
-print("\nClassification Report:")
-print(classification_report(y_val, y_pred))
+print(f"Validation Accuracy: {accuracy:.4f}")
+print(f"Weighted F1 Score: {f1:.4f}")
 
-# Save pruned Booster
-joblib.dump(bst, '../lightgbm_model_pruned.joblib')
-print("Pruned Booster saved as 'lightgbm_model_pruned.joblib'")
+print("\nClassification Report:")
+print(classification_report(y_val, y_pred, target_names=class_names))
+
+# Confusion matrix
+cm = confusion_matrix(y_val, y_pred)
+fig, ax = plt.subplots(figsize=(6, 4))
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_names)
+disp.plot(cmap='Blues', ax=ax, values_format='d')
+plt.title("Confusion Matrix with Counts")
+plt.show()
+
+print(f"Validation Accuracy: {accuracy:.4f}")
+f1 = f1_score(y_val, y_pred, average='weighted')
+
+print(f"Weighted F1 Score: {f1:.4f}")
+
+# Save model as .joblib
+joblib.dump(bst, 'lightgbm_model_pruned.joblib')
+print("LightGBM model saved as 'lightgbm_model_full.joblib'")
+

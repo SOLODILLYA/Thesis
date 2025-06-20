@@ -8,7 +8,7 @@ from sklearn.metrics import classification_report, confusion_matrix, ConfusionMa
 import joblib
 
 # Dataset directory
-DATASET_DIR = 'dataset_landmarks'
+DATASET_DIR = '../dataset_landmarks'
 MAX_SAMPLES_PER_CLASS = 2000
 
 X = []
@@ -49,11 +49,7 @@ X_train, X_val, y_train, y_val = train_test_split(
 
 # Create and train HistGradientBoost model (limit CPU cores with n_jobs)
 hist_model = HistGradientBoostingClassifier(
-    max_iter=100,
-    random_state=42,
-    max_leaf_nodes=31,
-    min_samples_leaf=20
-    # Note: HistGradientBoostingClassifier does not have n_jobs, but other scikit-learn models do
+    random_state=42
 )
 hist_model.fit(X_train, y_train)
 

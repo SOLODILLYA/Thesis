@@ -1,0 +1,19 @@
+Model,Avg Prediction Time (ms)
+lightgbm_model_pruned.joblib,0.2
+lightgbm_model_full.joblib,0.22
+logistic_regression_model.joblib,0.29
+mlp_model.joblib,0.33
+xgboost_model_pruned.joblib,0.6
+svm_model.joblib,0.62
+catboost_model_pruned.cbm,0.63
+catboost_model.cbm,0.63
+xgboost_model.joblib,0.63
+xgboost_model_full.joblib,0.64
+lightgbm_model.joblib,1.66
+knn_landmark_model.joblib,2.39
+hist_gradient_boost_model_pruned.joblib,4.1
+random_forest_model_pruned.joblib,4.34
+random_forest_model.joblib,4.38
+hist_gradient_boost_model.joblib,4.67
+bagging_model_pruned.joblib,5.29
+bagging_model.joblib,5.53

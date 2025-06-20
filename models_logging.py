@@ -4,7 +4,6 @@ import time
 import csv
 import clr
 import psutil
-import GPUtil
 import numpy as np
 import sys
 import joblib
@@ -38,27 +37,11 @@ def get_amd_gpu_usage():
     return 0.0
 
 # Models to test
-model_files = [
-    'bagging_model.joblib',
-    'hist_gradient_boost_model.joblib',
-    'knn_landmark_model.joblib',
-    'lightgbm_model.joblib',
-    'logistic_regression_model.joblib',
-    'mlp_model.joblib',
-    'random_forest_model.joblib',
-    'svm_model.joblib',
-    'xgboost_model.joblib',
-    'catboost_model.cbm',
-    'best_cnn_model_landmarks.h5'
-]
-
-# model_files = [
-#    'lightgbm_model.joblib',
-#    'lightgbm_model_pruned.joblib']
-
-
+model_dir = 'models_test'
+model_files = [os.path.join(model_dir, f) for f in os.listdir(model_dir) if os.path.isfile(os.path.join(model_dir, f))]
 # Video file path
-VIDEO_FILE = 'output.avi'
+VIDEO_FILE = 'dataset_creation/output.avi'
+
 
 # Setup MediaPipe
 mp_hands = mp.solutions.hands
@@ -78,27 +61,28 @@ def extract_landmarks(image):
 process = psutil.Process(os.getpid())
 
 for model_file in model_files:
-    print(f"\n=== Testing {model_file} ===")
+    model_name = os.path.basename(model_file)
+    print(f"\n=== Testing {model_name} ===")
 
     # Load appropriate model
-    if model_file.endswith('.joblib'):
+    if model_name.endswith('.joblib'):
         model = joblib.load(model_file)
         model_type = 'sklearn'
-    elif model_file.endswith('.cbm'):
+    elif model_name.endswith('.cbm'):
         model = CatBoostClassifier()
         model.load_model(model_file)
         model_type = 'catboost'
-    elif model_file.endswith('.h5'):
+    elif model_name.endswith('.h5'):
         model = tf.keras.models.load_model(model_file)
         model_type = 'tensorflow'
     else:
-        print(f"Unsupported model type for {model_file}")
+        print(f"Unsupported model type for {model_name}")
         continue
 
     # Prepare log file
     log_dir = 'logs'
     os.makedirs(log_dir, exist_ok=True)
-    log_path = os.path.join(log_dir, f'{model_file}_performance_log.csv')
+    log_path = os.path.join(log_dir, f'{model_name}_performance_log.csv')
     csv_file = open(log_path, mode='w', newline='')
     csv_writer = csv.writer(csv_file)
     csv_writer.writerow(['Timestamp', 'FPS', 'CPU (%)', 'RAM (MB)', 'GPU (%)', 'Processed Frames', 'Total Frames'])
@@ -123,54 +107,6 @@ for model_file in model_files:
         while True:
             loop_start = time.time()
             frame_count += 1
-
-            # if frame_count % 8 != 0:
-            #     cap.grab()
-            # else:
-            #     ret, frame = cap.read()
-            #     if not ret:
-            #         print("Reached end of video.")
-            #         break
-
-            #     processed_count += 1
-            #     landmarks = extract_landmarks(frame)
-            #     if landmarks is not None:
-            #         input_data = landmarks.reshape(1, -1)
-
-            #         if model_type == 'sklearn':
-            #             prediction = model.predict(input_data)
-            #             predicted_class = str(prediction[0])
-            #         elif model_type == 'catboost':
-            #             prediction = model.predict(input_data)
-            #             predicted_class = str(int(prediction[0]))
-            #         elif model_type == 'tensorflow':
-            #             prediction = model.predict(input_data, verbose=0)
-            #             predicted_class = str(np.argmax(prediction))
-            #         else:
-            #             predicted_class = 'N/A'
-
-            #         cv2.putText(frame, f'Predicted: {predicted_class}', (10, 30),
-            #                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-            #     else:
-            #         cv2.putText(frame, 'No Hand Detected', (10, 30),
-            #                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-
-            #     cv2.imshow(f'{model_file}', frame)
-
-            # if frame_count % 10 == 0:
-            #     elapsed = time.time() - start_time
-            #     fps = frame_count / elapsed
-            #     cpu = process.cpu_percent(interval=None) / psutil.cpu_count(logical=True)
-            #     ram = process.memory_info().rss / (1024 ** 2)  # MB
-            #     gpu = get_amd_gpu_usage()
-            #     timestamp = time.strftime('%H:%M:%S', time.localtime())
-
-            #     print(f'{timestamp} | FPS: {fps:.2f} | CPU: {cpu:.1f}% | RAM: {ram:.1f} MB | GPU: {gpu:.1f}% | Processed: {processed_count}/{frame_count}')
-            #     csv_writer.writerow([timestamp, f"{fps:.2f}", f"{cpu:.1f}", f"{ram:.1f}", f"{gpu:.1f}", f"{processed_count}", f"{frame_count}"])
-
-            # if cv2.waitKey(1) & 0xFF == ord('q'):
-            #     print("Stopped by user.")
-            #     break
 
             ret, frame = cap.read()
             if not ret:

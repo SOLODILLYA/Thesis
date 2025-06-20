@@ -8,7 +8,7 @@ from sklearn.metrics import classification_report, confusion_matrix, ConfusionMa
 import joblib
 from sklearn.metrics import f1_score
 # Dataset directory
-DATASET_DIR = 'dataset_landmarks'
+DATASET_DIR = '../dataset_landmarks'
 MAX_SAMPLES_PER_CLASS = 2000
 
 X = []

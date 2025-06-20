@@ -50,9 +50,7 @@ X_train, X_val, y_train, y_val = train_test_split(
 # Create and train CatBoost model
 cat_model = CatBoostClassifier(
     iterations=100,
-    learning_rate=0.1,
-    depth=6,
-    verbose=False,
+    verbose=100,
     random_state=42
 )
 cat_model.fit(X_train, y_train)

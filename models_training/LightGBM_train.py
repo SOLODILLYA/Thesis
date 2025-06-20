@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay, accuracy_score, f1_score
 
 # Dataset directory
-DATASET_DIR = 'dataset_landmarks'
+DATASET_DIR = '../dataset_landmarks'
 MAX_SAMPLES_PER_CLASS = 2000
 
 X = []
@@ -55,21 +55,15 @@ X_train, X_val, y_train, y_val = train_test_split(
 train_data = lgb.Dataset(X_train, label=y_train)
 valid_data = lgb.Dataset(X_val, label=y_val)
 
-# Define parameters
 params = {
     'objective': 'multiclass',
-    'num_class': len(class_names),
-    'metric': 'multi_logloss',
-    'learning_rate': 0.1,
-    'seed': 42
+    'num_class': len(class_names)
 }
 
-# Train without unsupported arguments
+# Use default num_boost_round (which is 100 if you omit it)
 bst = lgb.train(
     params,
-    train_data,
-    num_boost_round=500,
-    valid_sets=[valid_data]
+    train_data
 )
 
 # Get best iteration or fallback
@@ -98,6 +92,11 @@ disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_names)
 disp.plot(cmap='Blues', ax=ax, values_format='d')
 plt.title("Confusion Matrix with Counts")
 plt.show()
+
+print(f"Validation Accuracy: {accuracy:.4f}")
+f1 = f1_score(y_val, y_pred, average='weighted')
+
+print(f"Weighted F1 Score: {f1:.4f}")
 
 # Save model as .joblib
 joblib.dump(bst, 'lightgbm_model_full.joblib')

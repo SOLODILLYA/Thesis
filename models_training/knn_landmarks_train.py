@@ -8,7 +8,7 @@ import seaborn as sns
 import joblib
 from sklearn.metrics import f1_score
 # Directory with subfolders per gesture, containing landmark .txt files
-DATASET_DIR = './dataset_landmarks/'
+DATASET_DIR = '../dataset_landmarks/'
 
 # Prepare data containers
 X = []

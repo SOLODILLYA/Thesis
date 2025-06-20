@@ -8,7 +8,7 @@ import xgboost as xgb
 import joblib
 
 # Dataset directory
-DATASET_DIR = 'dataset_landmarks'
+DATASET_DIR = '../dataset_landmarks'
 MAX_SAMPLES_PER_CLASS = 2000
 
 X = []
@@ -49,11 +49,6 @@ X_train, X_val, y_train, y_val = train_test_split(
 
 # Create and train XGBoost model with early stopping
 xgb_model = xgb.XGBClassifier(
-    n_estimators=100,
-    max_depth=6,
-    learning_rate=0.1,
-    eval_metric='mlogloss',
-    early_stopping_rounds=10,
     random_state=42
 )
 
@@ -63,11 +58,7 @@ xgb_model.fit(
     verbose=True
 )
 
-# Save full (unpruned) model
-joblib.dump(xgb_model, 'xgboost_model_full.joblib')
-np.save('X_val.npy', X_val)
-np.save('y_val.npy', y_val)
-print("Full XGBoost model saved as 'xgboost_model_full.joblib'")
+
 
 # Report best iteration
 if hasattr(xgb_model, 'best_iteration'):
@@ -77,9 +68,6 @@ if hasattr(xgb_model, 'best_iteration'):
 y_pred = xgb_model.predict(X_val)
 accuracy = accuracy_score(y_val, y_pred)
 f1 = f1_score(y_val, y_pred, average='weighted')
-
-print(f"Validation Accuracy: {accuracy:.4f}")
-print(f"Weighted F1 Score: {f1:.4f}")
 
 print("\nClassification Report:")
 print(classification_report(y_val, y_pred, target_names=class_names))
@@ -91,3 +79,10 @@ disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_names)
 disp.plot(cmap='Blues', ax=ax, values_format='d')
 plt.title("Confusion Matrix with Counts")
 plt.show()
+
+print(f"Validation Accuracy: {accuracy:.4f}")
+print(f"Weighted F1 Score: {f1:.4f}")
+
+# Save full (unpruned) model
+joblib.dump(xgb_model, 'xgboost_model_full.joblib')
+print("Full XGBoost model saved as 'xgboost_model_full.joblib'")
