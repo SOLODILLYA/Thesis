@@ -10,7 +10,7 @@ from catboost import CatBoostClassifier
 
 # All available models
 model_files = [
-    'bagging_model.joblib',
+    'models/bagging_model.joblib',
     'hist_gradient_boost_model.joblib',
     'knn_landmark_model.joblib',
     'lightgbm_model.joblib',
