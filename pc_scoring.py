@@ -1,34 +1,27 @@
 import os
 import pandas as pd
 
-# Folder containing logs
 log_folder = "logs"
 output_file = "model_scores_summary.csv"
 summary_data = []
 
-# Weights for the cost function
 w_fps = 2.0
 w_cpu = 1.0
 w_ram = 0.5
 w_gpu = 1.0
 
 def compute_cost(fps, cpu, ram, gpu, ε=1e-5):
-    return (
-        cpu * ram * gpu / fps
-    )
+    return cpu * ram * gpu / fps
 
-# Scan and process each CSV file
 for file in os.listdir(log_folder):
     if file.endswith(".csv"):
         filepath = os.path.join(log_folder, file)
         df = pd.read_csv(filepath)
 
-        # Ensure required columns exist
         required_cols = {'FPS', 'CPU (%)', 'RAM (MB)', 'GPU (%)'}
         if not required_cols.issubset(df.columns):
             continue
 
-        # Calculate averages
         avg_fps = df['FPS'].astype(float).mean()
         avg_cpu = df['CPU (%)'].astype(float).mean()
         avg_ram = df['RAM (MB)'].astype(float).mean()
@@ -44,7 +37,6 @@ for file in os.listdir(log_folder):
             'Score': round(score, 4)
         })
 
-# Create summary CSV
 summary_df = pd.DataFrame(summary_data)
 summary_df.sort_values(by='Score', inplace=True)
 summary_df.to_csv(output_file, index=False)

@@ -8,7 +8,6 @@ from sklearn.metrics import classification_report, confusion_matrix, ConfusionMa
 import joblib
 from sklearn.metrics import f1_score
 
-# Dataset directory
 DATASET_DIR = 'dataset_landmarks'
 MAX_SAMPLES_PER_CLASS = 2000
 
@@ -28,7 +27,6 @@ def load_landmarks(txt_path):
                 values.extend([float(parts[1]), float(parts[2]), float(parts[3])])
         return np.array(values)
 
-# Load dataset with random sampling
 for label_idx, label in enumerate(class_names):
     label_path = os.path.join(DATASET_DIR, label)
     all_files = [f for f in os.listdir(label_path) if f.endswith('.txt')]
@@ -43,23 +41,19 @@ for label_idx, label in enumerate(class_names):
 X = np.array(X)
 y = np.array(y)
 
-# Stratified split
 X_train, X_val, y_train, y_val = train_test_split(
     X, y, test_size=0.2, stratify=y, random_state=42
 )
 
-# Create and train MLP model
 mlp = MLPClassifier(hidden_layer_sizes=(128, 64), max_iter=500, random_state=42)
 mlp.fit(X_train, y_train)
 
-# Evaluate
 y_pred = mlp.predict(X_val)
 accuracy = accuracy_score(y_val, y_pred)
 
 print("\nClassification Report:")
 print(classification_report(y_val, y_pred, target_names=class_names))
 
-# Confusion matrix with values
 cm = confusion_matrix(y_val, y_pred)
 fig, ax = plt.subplots(figsize=(6, 4))
 disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_names)
@@ -71,6 +65,6 @@ print(f"Validation Accuracy: {accuracy:.4f}")
 f1 = f1_score(y_val, y_pred, average='weighted')
 
 print(f"Weighted F1 Score: {f1:.4f}")
-# Save model
+
 joblib.dump(mlp, 'mlp_model.joblib')
 print("MLP model saved as 'mlp_model.joblib'")

@@ -8,7 +8,6 @@ import sys
 from tensorflow.keras.models import load_model
 from catboost import CatBoostClassifier
 
-# All available models
 model_files = [
     'models/bagging_model.joblib',
     'hist_gradient_boost_model.joblib',
@@ -23,7 +22,6 @@ model_files = [
     'best_cnn_model_landmarks.h5'
 ]
 
-# Change or prompt for model selection
 print("Select model to load:")
 for i, f in enumerate(model_files):
     print(f"{i}: {f}")
@@ -31,7 +29,6 @@ for i, f in enumerate(model_files):
 choice = int(input("Enter number: "))
 model_path = model_files[choice]
 
-# Load selected model
 if model_path.endswith('.joblib'):
     model = joblib.load(model_path)
     def predict_fn(X): return model.predict(X)[0]
@@ -49,10 +46,8 @@ else:
     print("Unsupported model type.")
     sys.exit(1)
 
-# Class labels
 class_names = ['like', 'no_gesture', 'peace', 'rock']
 
-# MediaPipe setup
 mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
 hands = mp_hands.Hands(static_image_mode=False, max_num_hands=1)
@@ -68,7 +63,6 @@ def extract_landmarks(image):
         return np.array(landmarks), hand_landmarks
     return None, None
 
-# Start webcam
 cap = cv2.VideoCapture(0)
 if not cap.isOpened():
     print("Error: Webcam not accessible.")

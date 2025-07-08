@@ -5,15 +5,13 @@ import pyautogui
 import joblib
 import ctypes
 
-# Load trained model (adjust path as needed)
 model = joblib.load('lightgbm_model.joblib')
-class_names = ['like', 'no_gesture', 'peace', 'rock']  # Adjust to your class names
+class_names = ['like', 'no_gesture', 'peace', 'rock'] 
 
-# Windows API constants for mouse button simulation
 MOUSEEVENTF_XDOWN = 0x0080
 MOUSEEVENTF_XUP = 0x0100
-XBUTTON1 = 0x0001  # Back button
-XBUTTON2 = 0x0002  # Forward button
+XBUTTON1 = 0x0001 
+XBUTTON2 = 0x0002 
 
 def press_mouse_button(button_id):
     ctypes.windll.user32.mouse_event(MOUSEEVENTF_XDOWN, 0, 0, button_id, 0)
@@ -23,14 +21,12 @@ def press_back_button():
     press_mouse_button(XBUTTON1)
     print("Pressed Mouse Button 4 (Back)")
 
-# Map gestures to actions
 gesture_actions = {
     'peace': lambda: pyautogui.press('pagedown'),
     'rock': lambda: pyautogui.press('pageup'),
     'like': press_back_button
 }
 
-# MediaPipe Hands setup
 mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
 hands = mp_hands.Hands(static_image_mode=False, max_num_hands=1)
@@ -46,7 +42,6 @@ def extract_landmarks(image):
         return np.array(landmarks), hand_landmarks
     return None, None
 
-# Start webcam
 cap = cv2.VideoCapture(0)
 if not cap.isOpened():
     print("Error: Webcam not accessible.")
@@ -74,7 +69,6 @@ while True:
         cv2.putText(frame, f'Gesture: {predicted_class}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX,
                     1, (0, 255, 0), 2, cv2.LINE_AA)
 
-        # Trigger action with custom cooldown for 'like'
         required_cooldown = 50 if predicted_class == 'like' else 10
         if predicted_class in gesture_actions:
             if predicted_class != last_prediction or frame_counter > required_cooldown:

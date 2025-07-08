@@ -11,18 +11,16 @@ import mediapipe as mp
 from catboost import CatBoostClassifier
 import tensorflow as tf
 
-# Load machine-specific DLL path from local config
 try:
     from config_local import OPEN_HW_MONITOR_DLL
 except ImportError:
     raise ImportError("Missing config_local.py! Please create it and set OPEN_HW_MONITOR_DLL.")
 
-# Append DLL path directory
 sys.path.append(os.path.dirname(OPEN_HW_MONITOR_DLL))
 clr.AddReference("OpenHardwareMonitorLib")
 
 from OpenHardwareMonitor import Hardware
-# Initialize GPU monitor
+
 computer = Hardware.Computer()
 computer.GPUEnabled = True
 computer.Open()
@@ -33,16 +31,14 @@ def get_amd_gpu_usage():
             hw.Update()
             for sensor in hw.Sensors:
                 if sensor.SensorType == Hardware.SensorType.Load and "Core" in sensor.Name:
-                    return sensor.Value  # %
+                    return sensor.Value
     return 0.0
 
-# Models to test
 model_dir = 'models_test'
 model_files = [os.path.join(model_dir, f) for f in os.listdir(model_dir) if os.path.isfile(os.path.join(model_dir, f))]
-# Video file path
+
 VIDEO_FILE = 'dataset_creation/output.avi'
 
-# Setup MediaPipe
 mp_hands = mp.solutions.hands
 hands_detector = mp_hands.Hands(static_image_mode=False, max_num_hands=1)
 
@@ -56,14 +52,12 @@ def extract_landmarks(image):
         return np.array(landmarks, dtype=np.float32)
     return None
 
-# Process info
 process = psutil.Process(os.getpid())
 
 for model_file in model_files:
     model_name = os.path.basename(model_file)
     print(f"\n=== Testing {model_name} ===")
 
-    # Load appropriate model
     if model_name.endswith('.joblib'):
         model = joblib.load(model_file)
         model_type = 'sklearn'
@@ -78,7 +72,6 @@ for model_file in model_files:
         print(f"Unsupported model type for {model_name}")
         continue
 
-    # Prepare log file
     log_dir = 'logs'
     os.makedirs(log_dir, exist_ok=True)
     log_path = os.path.join(log_dir, f'{model_name}_performance_log.csv')
@@ -86,7 +79,6 @@ for model_file in model_files:
     csv_writer = csv.writer(csv_file)
     csv_writer.writerow(['Timestamp', 'FPS', 'CPU (%)', 'RAM (MB)', 'GPU (%)', 'Processed Frames', 'Total Frames'])
 
-    # Load video
     cap = cv2.VideoCapture(VIDEO_FILE)
     if not cap.isOpened():
         print(f"Error: Cannot open video {VIDEO_FILE}.")
@@ -97,7 +89,6 @@ for model_file in model_files:
     processed_count = 0
     start_time = time.time()
 
-    # Warm up CPU percent tracker
     process.cpu_percent(interval=None)
 
     print(f"Processing full video...")
@@ -144,7 +135,7 @@ for model_file in model_files:
                 elapsed = time.time() - start_time
                 fps = frame_count / elapsed
                 cpu = process.cpu_percent(interval=None) / psutil.cpu_count(logical=True)
-                ram = process.memory_info().rss / (1024 ** 2)  # MB
+                ram = process.memory_info().rss / (1024 ** 2) 
                 gpu = get_amd_gpu_usage()
                 timestamp = time.strftime('%H:%M:%S', time.localtime())
 

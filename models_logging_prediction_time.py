@@ -9,7 +9,6 @@ import mediapipe as mp
 from catboost import CatBoostClassifier
 import tensorflow as tf
 
-# Load machine-specific DLL path
 try:
     from config_local import OPEN_HW_MONITOR_DLL
 except ImportError:
@@ -20,14 +19,11 @@ import clr
 clr.AddReference("OpenHardwareMonitorLib")
 from OpenHardwareMonitor import Hardware
 
-# Models to test
 model_dir = 'models_test'
 model_files = [os.path.join(model_dir, f) for f in os.listdir(model_dir) if os.path.isfile(os.path.join(model_dir, f))]
 
-# Video file path
 VIDEO_FILE = 'dataset_creation/output.avi'
 
-# Setup MediaPipe
 mp_hands = mp.solutions.hands
 hands_detector = mp_hands.Hands(static_image_mode=False, max_num_hands=1)
 
@@ -41,7 +37,6 @@ def extract_landmarks(image):
         return np.array(landmarks, dtype=np.float32)
     return None
 
-# Create logs_speed folder
 log_dir = 'logs_speed'
 os.makedirs(log_dir, exist_ok=True)
 
@@ -49,7 +44,6 @@ for model_file in model_files:
     model_name = os.path.basename(model_file)
     print(f"\n=== Testing Prediction Time: {model_name} ===")
 
-    # Load model
     if model_name.endswith('.joblib'):
         model = joblib.load(model_file)
         model_type = 'sklearn'
@@ -64,13 +58,11 @@ for model_file in model_files:
         print(f"Unsupported model type for {model_name}")
         continue
 
-    # Prepare log file
     log_path = os.path.join(log_dir, f'{model_name}_prediction_time.csv')
     csv_file = open(log_path, mode='w', newline='')
     csv_writer = csv.writer(csv_file)
     csv_writer.writerow(['Frame', 'Prediction Time (ms)'])
 
-    # Load video
     cap = cv2.VideoCapture(VIDEO_FILE)
     if not cap.isOpened():
         print(f"Error: Cannot open video {VIDEO_FILE}.")
@@ -96,7 +88,7 @@ for model_file in model_files:
                 _ = model.predict(input_data)
             elif model_type == 'tensorflow':
                 _ = model.predict(input_data, verbose=0)
-            pred_time = (time.time() - start_pred) * 1000  # ms
+            pred_time = (time.time() - start_pred) * 1000
 
             frame_num += 1
             csv_writer.writerow([frame_num, f"{pred_time:.2f}"])

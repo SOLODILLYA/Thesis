@@ -7,15 +7,14 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 from tensorflow.keras.callbacks import ModelCheckpoint
 from sklearn.metrics import f1_score
-# Dataset directory containing subfolders per class with .txt files
+
 DATASET_DIR = 'dataset_landmarks'
-MAX_SAMPLES_PER_CLASS = 2000  # Limit per class
+MAX_SAMPLES_PER_CLASS = 2000
 
 X = []
 y = []
 class_names = sorted([d for d in os.listdir(DATASET_DIR) if os.path.isdir(os.path.join(DATASET_DIR, d))])
 
-# Helper to load landmarks from .txt file
 def load_landmarks(txt_path):
     with open(txt_path, 'r') as f:
         lines = f.readlines()
@@ -28,7 +27,6 @@ def load_landmarks(txt_path):
                 values.extend([float(parts[1]), float(parts[2]), float(parts[3])])
         return np.array(values)
 
-# Load dataset with random sampling
 for label_idx, label in enumerate(class_names):
     label_path = os.path.join(DATASET_DIR, label)
     all_files = [f for f in os.listdir(label_path) if f.endswith('.txt')]

@@ -7,10 +7,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import joblib
 from sklearn.metrics import f1_score
-# Directory with subfolders per gesture, containing landmark .txt files
+
 DATASET_DIR = '../dataset_landmarks/'
 
-# Prepare data containers
 X = []
 y = []
 
@@ -23,14 +22,13 @@ def load_landmarks(txt_file_path):
             landmarks = []
             for line in lines:
                 parts = line.strip().split(',')
-                if len(parts) == 4:  # id,x,y,z
+                if len(parts) == 4:
                     landmarks.extend([float(parts[1]), float(parts[2]), float(parts[3])])
             return np.array(landmarks)
     except Exception as e:
         print(f"Error reading {txt_file_path}: {e}")
         return None
 
-# Load data
 for gesture in os.listdir(DATASET_DIR):
     gesture_path = os.path.join(DATASET_DIR, gesture)
     if not os.path.isdir(gesture_path):
@@ -47,7 +45,6 @@ for gesture in os.listdir(DATASET_DIR):
         else:
             print(f"Skipping {txt_file_path} due to invalid or missing landmarks.")
 
-# Convert to numpy arrays
 X = np.array(X)
 y = np.array(y)
 
@@ -55,14 +52,11 @@ if len(X) == 0:
     print("No valid data found. Exiting.")
     exit()
 
-# Split data
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Train k-NN classifier
 knn = KNeighborsClassifier(n_neighbors=3)
 knn.fit(X_train, y_train)
 
-# Evaluate
 y_pred = knn.predict(X_test)
 
 print("\nClassification Report:")
@@ -88,6 +82,6 @@ for i, label in enumerate(knn.classes_):
 f1 = f1_score(y_test, y_pred, average='weighted')
 
 print(f"Weighted F1 Score: {f1:.4f}")
-# Save model
+
 joblib.dump(knn, 'knn_landmark_model.joblib')
 print("Model saved as knn_landmark_model.joblib")

@@ -1,30 +1,26 @@
 import cv2
 import time
 
-# Set up video capture
-cap = cv2.VideoCapture(0)  # 0 = default webcam
+cap = cv2.VideoCapture(0)
 
-# Get the video frame width and height
 frame_width = int(cap.get(3))
 frame_height = int(cap.get(4))
 
-# Define codec and create VideoWriter object
 out = cv2.VideoWriter('output.avi', 
                       cv2.VideoWriter_fourcc('M','J','P','G'),
-                      60,  # frames per second
+                      60,
                       (frame_width, frame_height))
 
-# Set timer
 start_time = time.time()
-duration = 60  # 60 seconds
+duration = 60
 
 print("Recording started...")
 
 while int(time.time() - start_time) < duration:
     ret, frame = cap.read()
     if ret:
-        out.write(frame)  # write frame to output file
-        cv2.imshow('Recording', frame)  # show live preview
+        out.write(frame)  
+        cv2.imshow('Recording', frame)  
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             print("Recording stopped early by user.")
@@ -33,7 +29,6 @@ while int(time.time() - start_time) < duration:
         print("Failed to capture frame.")
         break
 
-# Release resources
 cap.release()
 out.release()
 cv2.destroyAllWindows()

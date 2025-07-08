@@ -6,7 +6,6 @@ mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(max_num_hands=1, min_detection_confidence=0.7, min_tracking_confidence=0.5)
 mp_draw = mp.solutions.drawing_utils
 
-# Landmark indices from MediaPipe documentation
 WRIST = 0
 THUMB_CMC = 1
 THUMB_MCP = 2
@@ -29,11 +28,9 @@ PINKY_PIP = 18
 PINKY_DIP = 19
 PINKY_TIP = 20
 
-# Helper function to calculate distance between two points
 def calculate_distance(p1, p2):
     return math.sqrt((p1.x - p2.x)**2 + (p1.y - p2.y)**2 + (p1.z - p2.z)**2)
 
-# Helper function to calculate angle between three points (p2 is the vertex)
 def calculate_angle(p1, p2, p3):
     v1_x = p1.x - p2.x
     v1_y = p1.y - p2.y
@@ -45,7 +42,7 @@ def calculate_angle(p1, p2, p3):
     mag_v2 = math.sqrt(v2_x**2 + v2_y**2)
 
     if mag_v1 * mag_v2 == 0:
-        return 180.0 # Return a neutral angle if magnitude is zero to avoid errors
+        return 180.0
     
     acos_arg = max(-1.0, min(1.0, dot_product / (mag_v1 * mag_v2)))
     angle_rad = math.acos(acos_arg)
@@ -244,7 +241,7 @@ while True:
     result = hands.process(rgb_frame)
 
     gesture_text = "No Gesture"
-    text_color = (0, 0, 255) # Red
+    text_color = (0, 0, 255)
 
     if result.multi_hand_landmarks:
         for hand_landmarks in result.multi_hand_landmarks:
@@ -252,20 +249,20 @@ while True:
             
             if is_thumbs_up(hand_landmarks.landmark, debug=True):
                 gesture_text = "Thumbs Up!"
-                text_color = (0, 255, 0) # Green
+                text_color = (0, 255, 0) 
             elif is_rock_n_roll_sign(hand_landmarks.landmark, debug=True):
                 gesture_text = "Rock N Roll!"
-                text_color = (255, 105, 180) # Hot Pink
+                text_color = (255, 105, 180)
             elif is_peace_sign(hand_landmarks.landmark, debug=True):
                 gesture_text = "Peace Sign!"
-                text_color = (0, 255, 255) # Yellow
+                text_color = (0, 255, 255)
             
     
     cv2.putText(frame, gesture_text, (50, 50), 
                 cv2.FONT_HERSHEY_SIMPLEX, 1.2, text_color, 3)
     cv2.imshow("Multi-Gesture Detection v10", frame)
 
-    if cv2.waitKey(1) & 0xFF == 27: # ESC key to exit
+    if cv2.waitKey(1) & 0xFF == 27:
         break
 
 cap.release()

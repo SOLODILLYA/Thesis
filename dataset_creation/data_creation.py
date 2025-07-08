@@ -2,15 +2,12 @@ import cv2
 import os
 import time
 
-# Parameters
 output_folder = './dataset_created/peace'
 total_frames_to_capture = 500
-capture_interval_sec = 0.05  # 50 ms = 20 FPS approx.
+capture_interval_sec = 0.05
 
-# Prepare output folder
 os.makedirs(output_folder, exist_ok=True)
 
-# Open webcam
 cap = cv2.VideoCapture(0)
 if not cap.isOpened():
     print("Error: Could not open webcam.")
@@ -26,7 +23,6 @@ while frame_counter < total_frames_to_capture:
         print("Failed to grab frame")
         break
 
-    # Show preview
     cv2.imshow('Webcam Preview', frame)
 
     current_time = time.time()

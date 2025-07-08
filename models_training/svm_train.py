@@ -8,7 +8,6 @@ from sklearn.metrics import classification_report, confusion_matrix, accuracy_sc
 import joblib
 from sklearn.metrics import f1_score
 
-# Dataset directory containing subfolders per class with .txt files
 DATASET_DIR = 'dataset_landmarks'
 MAX_SAMPLES_PER_CLASS = 2000
 
@@ -28,7 +27,6 @@ def load_landmarks(txt_path):
                 values.extend([float(parts[1]), float(parts[2]), float(parts[3])])
         return np.array(values)
 
-# Load dataset with random sampling
 for label_idx, label in enumerate(class_names):
     label_path = os.path.join(DATASET_DIR, label)
     all_files = [f for f in os.listdir(label_path) if f.endswith('.txt')]
@@ -43,37 +41,31 @@ for label_idx, label in enumerate(class_names):
 X = np.array(X)
 y = np.array(y)
 
-# Stratified split for balanced validation
 X_train, X_val, y_train, y_val = train_test_split(
     X, y, test_size=0.2, stratify=y, random_state=42
 )
 
-# Create and train SVM model
 svm = SVC(kernel='rbf', C=1.0, gamma='scale', probability=True)
 svm.fit(X_train, y_train)
 
-# Evaluate
 y_pred = svm.predict(X_val)
 accuracy = accuracy_score(y_val, y_pred)
 
 print("\nClassification Report:")
 print(classification_report(y_val, y_pred, target_names=class_names))
 
-# Compute confusion matrix
 cm = confusion_matrix(y_val, y_pred)
 
-# Plot with annotations
 fig, ax = plt.subplots(figsize=(6, 4))
 disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_names)
 disp.plot(cmap='Blues', ax=ax, values_format='d')
 plt.title("Confusion Matrix with Counts")
 plt.show()
 
-# Show validation accuracy
 print(f"Validation Accuracy: {accuracy:.4f}")
 f1 = f1_score(y_val, y_pred, average='weighted')
 
 print(f"Weighted F1 Score: {f1:.4f}")
-# Save SVM model
+
 joblib.dump(svm, 'svm_model.joblib')
 print("SVM model saved as 'svm_model.joblib'")
